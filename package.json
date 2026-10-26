@@ -1,6 +1,6 @@
 {
   "name": "@byreal-io/byreal-evm-clmm-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Byreal CLMM SDK for EVM (Byreal custom Uniswap V3 style contracts)",
   "type": "module",
   "license": "MIT",
