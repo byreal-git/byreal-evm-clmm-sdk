@@ -1,0 +1,19 @@
+package.json
+  s_d15fe790300d31::t_c86e684ccacdf5 8,11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2-bit.2+419f699",
+  "base_commit_sha": "5131de480446f6748bb0c6be97287880ab843c13",
+  "prompts": {},
+  "sessions": {
+    "s_d15fe790300d31": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "s_d15fe790300d31",
+        "model": "unknown"
+      },
+      "human_author": "er.wang <er.wang@lunarax.io>"
+    }
+  }
+}
