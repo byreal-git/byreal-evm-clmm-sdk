@@ -1,0 +1,395 @@
+examples/05_decrease_liquidity.ts
+  s_879266e81ed27e::t_2550ba070dc3ee 1-36
+examples/config.ts
+  s_879266e81ed27e::t_fcee05235b3408 1-22,26-99,105-106
+  s_879266e81ed27e::t_9769d9df42f810 25
+  s_879266e81ed27e::t_d288b02cf87fe9 23-24
+  s_879266e81ed27e::t_90498a8102ddf2 100-104,107-117
+src/compat/offchain.ts
+  s_879266e81ed27e::t_880f1de74713ec 509
+  s_879266e81ed27e::t_8142d05bd2e302 69
+  s_879266e81ed27e::t_085b00fdb100f0 132,135,171,175,183,186,188,191,193-197,218,221,227,230,232,235,244,247,286,290,485,493,545,553,599,605,645,652,712,715,731,739,771,780,860,870,929,940,983,986,991,994,1008,1015,1030,1033,1072,1075,1127,1133,1267,1273
+  s_879266e81ed27e::t_da37f58bdab409 1-68,70-131,133-134,136-170,172-174,176-182,184-185,187,189-190,192,198-217,219-220,222-226,228-229,231,233-234,236-243,245-246,248-285,287-289,291-484,486-492,494-508,510-544,546-552,554-598,600-604,606-644,646-651,653-711,713-714,716-730,732-738,740-770,772-779,781-859,861-869,871-928,930-939,941-982,984-985,987-990,992-993,995-1007,1009-1014,1016-1029,1031-1032,1034-1071,1073-1074,1076-1126,1128-1132,1134-1266,1268-1272,1274-1304
+docs/core.md
+  s_879266e81ed27e::t_9b964ee72355fd 5-86
+  s_879266e81ed27e::t_d5162c13d0e199 2-4
+  s_879266e81ed27e::t_fc4679f95b0b64 1
+scripts/checkDist.mjs
+  s_879266e81ed27e::t_e7e6c017e9deb3 3-5,8-12,14
+  s_879266e81ed27e::t_3f026f3f2c0cd0 13
+  s_879266e81ed27e::t_5b5f76beaaa12b 1-2,6-7,15-50
+src/constants.ts
+  s_879266e81ed27e::t_e845da8ef493d9 2-122
+  s_879266e81ed27e::t_cc1c7c59a69199 1,123-142
+src/raw/jsbi.ts
+  s_879266e81ed27e::t_b2344258ea3d69 1-16
+examples/01_read_pool.ts
+  s_879266e81ed27e::t_5afd7759dbba16 2-45
+  s_879266e81ed27e::t_1dfdc30b0e2f1d 1
+examples/07_close_position.ts
+  s_879266e81ed27e::t_51b7a3ebe01bff 1-27
+src/compat/liquidity.ts
+  s_879266e81ed27e::t_22c6271450afdf 414
+  s_879266e81ed27e::t_7f14afad7e1010 52
+  s_879266e81ed27e::t_07fe0a4acf505c 196,199,203,207,209-213,256,259,282,285,295,298,300,303,305,310,384,393,448,456,503,512,550,561,600,606,639,647,672,691,771,780,833,840,901,905,922,928,968,979,1007,1012,1027,1032,1099,1108
+  s_879266e81ed27e::t_6c9fa61d55f005 1-51,53-195,197-198,200-202,204-206,208,214-255,257-258,260-281,283-284,286-294,296-297,299,301-302,304,306-309,311-383,385-392,394-413,415-447,449-455,457-502,504-511,513-549,551-560,562-599,601-605,607-638,640-646,648-671,673-690,692-770,772-779,781-832,834-839,841-900,902-904,906-921,923-927,929-967,969-978,980-1006,1008-1011,1013-1026,1028-1031,1033-1098,1100-1107,1109-1113
+src/compat/offchain.test.ts
+  s_879266e81ed27e::t_57f648da4619e3 18-21
+  s_879266e81ed27e::t_33236712c00577 1-17,22-731
+README.md
+  s_879266e81ed27e::t_8cc01ea0543b0d 9-28,30,35-89,122-150
+  s_879266e81ed27e::t_7b32ccfd396dc5 93-120
+  s_879266e81ed27e::t_9a3d832d78e71c 29,31
+  s_879266e81ed27e::t_4750605fc56ee4 6-8
+  s_879266e81ed27e::t_4b3f2e8ab1fc0b 32-34
+  s_879266e81ed27e::t_0f8b6c87dbae65 90-92
+  s_879266e81ed27e::t_9bc9af1fac5f10 121
+  s_879266e81ed27e::t_1ca831f854a549 1-5
+examples/04_add_liquidity.ts
+  s_879266e81ed27e::t_3fa15dd7868e55 1-49
+src/raw/entities/pool.ts
+  s_879266e81ed27e::t_1b11f5ef2a2de1 411-414
+  s_879266e81ed27e::t_cc2ae541b79510 1-410,415-544
+examples/06_collect_fees.ts
+  s_879266e81ed27e::t_58d1473a528767 1-19,22-28
+  s_879266e81ed27e::t_f9751e07c18507 20-21
+src/client.ts
+  s_879266e81ed27e::t_b84d4cb8361882 58-62
+  s_879266e81ed27e::t_9bd172719abf8c 22
+  s_879266e81ed27e::t_51d6c7aa2a6a74 89,91,95-101
+  s_879266e81ed27e::t_ddd863b611d24a 12
+  s_879266e81ed27e::t_29978542cf24ec 107
+  s_879266e81ed27e::t_fb6ebaf262d557 1-11,13-21,23-57,63-88,90,92-94,102-106,108-182
+src/constants.test.ts
+  s_879266e81ed27e::t_462eba859eefd1 2-80
+  s_879266e81ed27e::t_ea699a17f05625 1,81-85
+docs/compat.md
+  s_879266e81ed27e::t_c09a40a8d4d61d 32-37
+  s_879266e81ed27e::t_82c5baaf348809 176-181
+  s_879266e81ed27e::t_0f745460a1c04d 150
+  s_879266e81ed27e::t_122c7d66f5bf73 45-50
+  s_879266e81ed27e::t_08b6545528f1f3 244-249
+  s_879266e81ed27e::t_a1e731f6da4228 239-243
+  s_879266e81ed27e::t_4626a40aa653a3 3-5
+  s_879266e81ed27e::t_48acc4fdf7ca8f 202
+  s_879266e81ed27e::t_b827facae16d06 103
+  s_879266e81ed27e::t_777ada629c7654 1-2,6-31,38-44,51-102,104-149,151-175,182-201,203-238
+src/chain/index.ts
+  s_879266e81ed27e::t_378fbd29c05f7f 13
+  s_879266e81ed27e::t_b2edc300c572b9 1-12,14-671
+src/compat/liquidity.test.ts
+  s_879266e81ed27e::t_e56f24842b8c95 14
+  s_879266e81ed27e::t_c9f78648bffeba 79,93-96,98-99,113,116,120,124,140,143,158,160,180,183,187,191,195,198,204,206,209,212,214-217,219-220,229,238,242-249,277,280,282,285,288,291,296,299-300,303,306,308,314,317,326-327,339,342-343,355,358-359,369,372,374-381,385,388,390-393,395,397,400,409,417,421,424-425,428,432,434-465,467-468,471,474,482,485,488-489,501,504-505,513,516-517,520,523-524,534,545-548,550-551,560-563,565-566,569,572,574,577,586,591-598,609,624,640,643,645,651,654,656,660,665,672,677,685,690,699,704,710,715,725,732,739,742-743,750,753,762,764,767,772,775,779,782,796,798,801,803,807
+  s_879266e81ed27e::t_774c21400bf4d8 1-13,15-78,80-92,97,100-112,114-115,117-119,121-123,125-139,141-142,144-157,159,161-179,181-182,184-186,188-190,192-194,196-197,199-203,205,207-208,210-211,213,218,221-228,230-237,239-241,250-276,278-279,281,283-284,286-287,289-290,292-295,297-298,301-302,304-305,307,309-313,315-316,318-325,328-338,340-341,344-354,356-357,360-368,370-371,373,382-384,386-387,389,394,396,398-399,401-408,410-416,418-420,422-423,426-427,429-431,433,466,469-470,472-473,475-481,483-484,486-487,490-500,502-503,506-512,514-515,518-519,521-522,525-533,535-544,549,552-559,564,567-568,570-571,573,575-576,578-585,587-590,599-608,610-623,625-639,641-642,644,646-650,652-653,655,657-659,661-664,666-671,673-676,678-684,686-689,691-698,700-703,705-709,711-714,716-724,726-731,733-738,740-741,744-749,751-752,754-761,763,765-766,768-771,773-774,776-778,780-781,783-795,797,799-800,802,804-806,808
+src/compat/internal.ts
+  s_879266e81ed27e::t_810b05b70e36c1 1,4,15,20,24,37,39,42,46,49,51,53,56,60,62,64,69,73,79,81,89,92,95,101,103,108,116,118,121-124,126,128,132,136-137,139-143,145-172,175,179,181-182,184,186,188,192,196,206,210,213-214,216,222,224,229,233,235,237,241,247,251,258,260,262,266,269,275,277,282,290,292,294,297,302,306-307,311-312,314,316,319,326,332,334,338,354-355,373-374,376,378,381,393-394,400,402,408,411,437,449,451,453,457,467,471,477,483,485,488,492,494,496,500,506,510,516,518,540,551
+  s_879266e81ed27e::t_d3826a16ce203d 2-3,5-14,16-19,21-23,25-36,38,40-41,43-45,47-48,50,52,54-55,57-59,61,63,65-68,70-72,74-78,80,82-88,90-91,93-94,96-100,102,104-107,109-115,117,119-120,125,127,129-131,133-135,138,144,173-174,176-178,180,183,185,187,189-191,193-195,197-205,207-209,211-212,215,217-221,223,225-228,230-232,234,236,238-240,242-246,248-250,252-257,259,261,263-265,267-268,270-274,276,278-281,283-289,291,293,295-296,298-301,303-305,308-310,313,315,317-318,320-325,327-331,333,335-337,339-353,356-372,375,377,379-380,382-392,395-399,401,403-407,409-410,412-436,438-448,450,452,454-456,458-466,468-470,472-476,478-482,484,486-487,489-491,493,495,497-499,501-505,507-509,511-515,517,519-539,541-550
+examples/03_create_position.ts
+  s_879266e81ed27e::t_3cb8f848e71b8e 1-68
+src/types.ts
+  s_879266e81ed27e::t_762b51ba9328ce 6
+  s_879266e81ed27e::t_8e342dbcd1b507 31-59
+  s_879266e81ed27e::t_03024e827ea7fd 1-5,7-30,60-380
+tsconfig.build.json
+  s_879266e81ed27e::t_98fd990aa0be52 8-9
+  s_879266e81ed27e::t_9885565ff75dcd 5-7
+  s_879266e81ed27e::t_6dcff0d9598178 10-12
+  s_879266e81ed27e::t_2be65bcc6cbf6d 1-4,13
+package.json
+  s_879266e81ed27e::t_761566843467ba 4-66,78,81,90
+  s_879266e81ed27e::t_9129eaf6af367a 1-3,67-77,79-80,82-89,91-94
+examples/08_swap.ts
+  s_879266e81ed27e::t_2596fa074fc039 1-76
+src/__test__/client.test.ts
+  s_879266e81ed27e::t_b460acfd3035f0 33-70,72,88,106,113
+  s_879266e81ed27e::t_636000b8586781 24
+  s_879266e81ed27e::t_0051771d918210 1-23,25-32,71,73-87,89-105,107-112,114-117
+examples/02_read_positions.ts
+  s_879266e81ed27e::t_c04c849fbc73f6 4,7,11,18-28,30-40,42-43,59
+  s_879266e81ed27e::t_bd0b8a80f03b94 1-3,5-6,8-10,12-17,29,41,46-47,49-54,56-58,60-71
+  s_879266e81ed27e::t_e6b550293db6b7 44-45
+  s_879266e81ed27e::t_61d7823dfb7b79 48
+  s_879266e81ed27e::t_6ee715f332c3e1 55
+.env.example
+  s_879266e81ed27e::t_a2bc77fc1c575c 1-14
+.github/workflows/release.yml
+  s_879266e81ed27e::t_c124bd4174f82b 1-27
+.gitignore
+  s_879266e81ed27e::t_66d098daf2a755 1-8
+LICENSE
+  s_879266e81ed27e::t_036d9fb4f47cc0 1-21
+THIRD_PARTY_NOTICES.md
+  s_879266e81ed27e::t_85935629e3e74e 1-29
+package-lock.json
+  s_879266e81ed27e::t_076d98562fc695 1-2384
+src/__test__/receipt.test.ts
+  s_879266e81ed27e::t_a20f023478d22f 1-72
+src/abis.ts
+  s_879266e81ed27e::t_4c87fd11ed5283 1-58
+src/calculate.test.ts
+  s_879266e81ed27e::t_0a86415f074a6c 1-284
+src/calculate.ts
+  s_879266e81ed27e::t_5b641ea531bce9 1-766
+src/chain/index.test.ts
+  s_879266e81ed27e::t_24295537da64c9 1-119
+src/compat/chain.test.ts
+  s_879266e81ed27e::t_fcae538c93cfe1 1-520
+src/compat/chain.ts
+  s_879266e81ed27e::t_aae3b02669d272 1-603
+src/compat/client.ts
+  s_879266e81ed27e::t_620b7e2913e24c 1-286
+src/compat/coerce.test.ts
+  s_879266e81ed27e::t_cfe5d33d14da6b 1-534
+src/compat/coerce.ts
+  s_879266e81ed27e::t_cb5b1ecdc4ed24 1-522
+src/compat/index.ts
+  s_879266e81ed27e::t_fd2bb859deec6c 1-45
+src/compat/math.test.ts
+  s_879266e81ed27e::t_5f6d063e8f5706 1-361
+src/compat/math.ts
+  s_879266e81ed27e::t_49ac04c2102739 1-549
+src/compat/models.ts
+  s_879266e81ed27e::t_dbd89c5231fff9 1-238
+src/compat/parity.test.ts
+  s_879266e81ed27e::t_46e1d6cea85ac9 1-340
+src/compat/state.test.ts
+  s_879266e81ed27e::t_78fcf91042c4f6 1-45
+src/compat/state.ts
+  s_879266e81ed27e::t_7ebb2bd9634c0f 1-469
+src/compat/test-fixtures.ts
+  s_879266e81ed27e::t_dcddda423800b5 1-374
+src/index.ts
+  s_879266e81ed27e::t_7be170ddc9a8d7 1-31
+src/liquidity/__test__/clmm.test.ts
+  s_879266e81ed27e::t_46db4d5d096541 1-87
+src/liquidity/abstract.ts
+  s_879266e81ed27e::t_09e396af5b008a 1-69
+src/liquidity/clmm.test.ts
+  s_879266e81ed27e::t_2cb851793830d5 1-109
+src/liquidity/clmm.ts
+  s_879266e81ed27e::t_c0c7b7f51f26bd 1-866
+src/raw/abis/factory.ts
+  s_879266e81ed27e::t_25eeeac644a8e9 1-174
+src/raw/abis/index.ts
+  s_879266e81ed27e::t_c702852c512720 1-6
+src/raw/abis/nonfungiblePositionManager.ts
+  s_879266e81ed27e::t_d0c4bf73ea5dc2 1-1340
+src/raw/abis/pool.ts
+  s_879266e81ed27e::t_f00c04d42c1a87 1-1666
+src/raw/abis/quoter.ts
+  s_879266e81ed27e::t_9377ea374751ca 1-301
+src/raw/abis/swapRouter.ts
+  s_879266e81ed27e::t_4deb57bd5a181a 1-740
+src/raw/constants.test.ts
+  s_879266e81ed27e::t_b725f0ecbc5949 1-83
+src/raw/core/constants.ts
+  s_879266e81ed27e::t_5672e3278b0ac9 1-17
+src/raw/core/declarations.d.ts
+  s_879266e81ed27e::t_2352b9cfcd1708 1
+src/raw/core/entities/baseCurrency.ts
+  s_879266e81ed27e::t_a40163bd26ed78 1-63
+src/raw/core/entities/currency.test.ts
+  s_879266e81ed27e::t_ffc589a720b2f1 1-27
+src/raw/core/entities/currency.ts
+  s_879266e81ed27e::t_f879c5f4823519 1-4
+src/raw/core/entities/ether.test.ts
+  s_879266e81ed27e::t_14ed79186b0aca 1-34
+src/raw/core/entities/ether.ts
+  s_879266e81ed27e::t_6f0f37317f06ca 1-30
+src/raw/core/entities/fractions/currencyAmount.test.ts
+  s_879266e81ed27e::t_67be7c1e2a816e 1-115
+src/raw/core/entities/fractions/currencyAmount.ts
+  s_879266e81ed27e::t_2a8f509b02be50 1-96
+src/raw/core/entities/fractions/fraction.test.ts
+  s_879266e81ed27e::t_507ba7f9778ac3 1-128
+src/raw/core/entities/fractions/fraction.ts
+  s_879266e81ed27e::t_802c72e8a493b0 1-160
+src/raw/core/entities/fractions/index.ts
+  s_879266e81ed27e::t_ff5742c381619c 1-4
+src/raw/core/entities/fractions/percent.test.ts
+  s_879266e81ed27e::t_7151bf472802e1 1-52
+src/raw/core/entities/fractions/percent.ts
+  s_879266e81ed27e::t_9df176c9208641 1-44
+src/raw/core/entities/fractions/price.test.ts
+  s_879266e81ed27e::t_e7a76e95d75dc6 1-60
+src/raw/core/entities/fractions/price.ts
+  s_879266e81ed27e::t_cd711737db29b4 1-88
+src/raw/core/entities/index.ts
+  s_879266e81ed27e::t_6198683a20c6aa 1-7
+src/raw/core/entities/nativeCurrency.ts
+  s_879266e81ed27e::t_3eaec4830b7630 1-9
+src/raw/core/entities/token.test.ts
+  s_879266e81ed27e::t_8623eb3a7adaff 1-91
+src/raw/core/entities/token.ts
+  s_879266e81ed27e::t_69bd73a562779d 1-89
+src/raw/core/entities/weth9.ts
+  s_879266e81ed27e::t_ba37777dca5f42 1-9
+src/raw/core/index.ts
+  s_879266e81ed27e::t_0890a6984aad8d 1-7
+src/raw/core/utils/computePriceImpact.test.ts
+  s_879266e81ed27e::t_00aec8cc9fdf00 1-38
+src/raw/core/utils/computePriceImpact.ts
+  s_879266e81ed27e::t_e7a52af289a44d 1-18
+src/raw/core/utils/index.ts
+  s_879266e81ed27e::t_0e811cde7696b7 1-4
+src/raw/core/utils/sortedInsert.test.ts
+  s_879266e81ed27e::t_eb6c1bff84361e 1-67
+src/raw/core/utils/sortedInsert.ts
+  s_879266e81ed27e::t_695c87c3562438 1-35
+src/raw/core/utils/sqrt.test.ts
+  s_879266e81ed27e::t_b229be0198d0d6 1-26
+src/raw/core/utils/sqrt.ts
+  s_879266e81ed27e::t_638d5dba3e434a 1-31
+src/raw/core/utils/validateAndParseAddress.test.ts
+  s_879266e81ed27e::t_a2ed9e68558dba 1-53
+src/raw/core/utils/validateAndParseAddress.ts
+  s_879266e81ed27e::t_5fe8a6d3359d74 1-28
+src/raw/entities/index.ts
+  s_879266e81ed27e::t_a828cdb92f2bf6 1-7
+src/raw/entities/pool.test.ts
+  s_879266e81ed27e::t_6e4a1c28ef2b2b 1-748
+src/raw/entities/position.test.ts
+  s_879266e81ed27e::t_3cfcca87db9459 1-459
+src/raw/entities/position.ts
+  s_879266e81ed27e::t_7b049369473f42 1-404
+src/raw/entities/route.test.ts
+  s_879266e81ed27e::t_d5ae6beff2fa7f 1-163
+src/raw/entities/route.ts
+  s_879266e81ed27e::t_0f600d00ca20a4 1-89
+src/raw/entities/tick.test.ts
+  s_879266e81ed27e::t_9f2b4d089eb428 1-14
+src/raw/entities/tick.ts
+  s_879266e81ed27e::t_d36c3347fc2e9c 1-23
+src/raw/entities/tickDataProvider.test.ts
+  s_879266e81ed27e::t_b9e2783d46f9b2 1-15
+src/raw/entities/tickDataProvider.ts
+  s_879266e81ed27e::t_5f374e94f48a0f 1-39
+src/raw/entities/tickListDataProvider.test.ts
+  s_879266e81ed27e::t_dbc218ef54a804 1-62
+src/raw/entities/tickListDataProvider.ts
+  s_879266e81ed27e::t_baefce1c2d311c 1-25
+src/raw/entities/trade.test.ts
+  s_879266e81ed27e::t_6b2c1561244dea 1-1380
+src/raw/entities/trade.ts
+  s_879266e81ed27e::t_55f565b8be79c7 1-709
+src/raw/index.ts
+  s_879266e81ed27e::t_02905d827cd1d7 1-15
+src/raw/internalConstants.ts
+  s_879266e81ed27e::t_69fb68612b010f 1-10
+src/raw/multicall.test.ts
+  s_879266e81ed27e::t_ec54e2686f3316 1-92
+src/raw/multicall.ts
+  s_879266e81ed27e::t_53d06431064e78 1-60
+src/raw/nonfungiblePositionManager.test.ts
+  s_879266e81ed27e::t_d5c0ea528b8821 1-530
+src/raw/nonfungiblePositionManager.ts
+  s_879266e81ed27e::t_a2189b1553bc1a 1-435
+src/raw/payments.test.ts
+  s_879266e81ed27e::t_8880bf32209ce2 1-156
+src/raw/payments.ts
+  s_879266e81ed27e::t_3a98590a4c47de 1-98
+src/raw/quoter.test.ts
+  s_879266e81ed27e::t_e2500af5e9fbd6 1-285
+src/raw/quoter.ts
+  s_879266e81ed27e::t_7e8346fb3abd23 1-109
+src/raw/selfPermit.test.ts
+  s_879266e81ed27e::t_8ddd1503aea65d 1-87
+src/raw/selfPermit.ts
+  s_879266e81ed27e::t_997102cfc29c90 1-55
+src/raw/swapRouter.test.ts
+  s_879266e81ed27e::t_ce28adcbab88ff 1-1406
+src/raw/swapRouter.ts
+  s_879266e81ed27e::t_7e71ed7cc00d3e 1-271
+src/raw/utils/calldata.ts
+  s_879266e81ed27e::t_9039d8f54877f1 1-30
+src/raw/utils/computePoolAddress.test.ts
+  s_879266e81ed27e::t_5ad4dd39d479cd 1-116
+src/raw/utils/computePoolAddress.ts
+  s_879266e81ed27e::t_7317cc1c30d073 1-43
+src/raw/utils/dynamicFeeMath.test.ts
+  s_879266e81ed27e::t_f58a3b7578ac3f 1-399
+src/raw/utils/dynamicFeeMath.ts
+  s_879266e81ed27e::t_e51ca0c2eaeb42 1-380
+src/raw/utils/encodeRouteToPath.test.ts
+  s_879266e81ed27e::t_0481f4ee32571f 1-189
+src/raw/utils/encodeRouteToPath.ts
+  s_879266e81ed27e::t_944f2ccebe6d47 1-80
+src/raw/utils/encodeSqrtRatioX96.test.ts
+  s_879266e81ed27e::t_8c975f2eb2b22a 1-25
+src/raw/utils/encodeSqrtRatioX96.ts
+  s_879266e81ed27e::t_d9ca09fa473862 1-16
+src/raw/utils/fullMath.ts
+  s_879266e81ed27e::t_1d10cff63e5b2e 1-16
+src/raw/utils/index.ts
+  s_879266e81ed27e::t_1a3ae95abcf4eb 1-18
+src/raw/utils/isSorted.test.ts
+  s_879266e81ed27e::t_53f731a5e3e7fc 1-37
+src/raw/utils/isSorted.ts
+  s_879266e81ed27e::t_a0953271260516 1-14
+src/raw/utils/liquidityMath.ts
+  s_879266e81ed27e::t_a84aa182a7d300 1-17
+src/raw/utils/maxLiquidityForAmounts.test.ts
+  s_879266e81ed27e::t_3ace4d6687a9f3 1-256
+src/raw/utils/maxLiquidityForAmounts.ts
+  s_879266e81ed27e::t_86f181e7c2fc24 1-91
+src/raw/utils/mostSignificantBit.test.ts
+  s_879266e81ed27e::t_dedeebdbae9a7f 1-30
+src/raw/utils/mostSignificantBit.ts
+  s_879266e81ed27e::t_c45a87c37dabfa 1-24
+src/raw/utils/nearestUsableTick.test.ts
+  s_879266e81ed27e::t_db47637242b08c 1-46
+src/raw/utils/nearestUsableTick.ts
+  s_879266e81ed27e::t_a9c8689a7db99a 1-17
+src/raw/utils/position.test.ts
+  s_879266e81ed27e::t_9ed0dc4ab6dcf6 1-25
+src/raw/utils/position.ts
+  s_879266e81ed27e::t_d8177c8672b5f1 1-32
+src/raw/utils/priceTickConversions.test.ts
+  s_879266e81ed27e::t_cf0d8bf9658f5c 1-118
+src/raw/utils/priceTickConversions.ts
+  s_879266e81ed27e::t_97e47f4e3807df 1-48
+src/raw/utils/sqrtPriceMath.ts
+  s_879266e81ed27e::t_90718f4e3a2bf3 1-119
+src/raw/utils/swapMath.ts
+  s_879266e81ed27e::t_d34572d62e66b7 1-104
+src/raw/utils/tickLibrary.test.ts
+  s_879266e81ed27e::t_cabbbf9b89fa4d 1-87
+src/raw/utils/tickLibrary.ts
+  s_879266e81ed27e::t_6c65322aea4cfc 1-61
+src/raw/utils/tickList.test.ts
+  s_879266e81ed27e::t_e3e1978e868aa8 1-153
+src/raw/utils/tickList.ts
+  s_879266e81ed27e::t_4d6679240b91d8 1-133
+src/raw/utils/tickMath.test.ts
+  s_879266e81ed27e::t_b45dc9aaeca7a4 1-52
+src/raw/utils/tickMath.ts
+  s_879266e81ed27e::t_d173a3d7c4659a 1-130
+src/receipt.ts
+  s_879266e81ed27e::t_7a457750eee842 1-192
+src/utils/index.test.ts
+  s_879266e81ed27e::t_3fe8163a555162 1-37
+src/utils/index.ts
+  s_879266e81ed27e::t_471a67562148df 1-30
+tsconfig.json
+  s_879266e81ed27e::t_a1ba313ec9b598 1-18
+vitest.config.ts
+  s_879266e81ed27e::t_818b0c67e66766 1-9
+src/raw/constants.ts
+  s_879266e81ed27e::t_1341a2eb05b1e8 1-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2-bit.2+419f699",
+  "base_commit_sha": "a985f378fb99e6e91456020a4f846f7cf392f0fe",
+  "prompts": {},
+  "sessions": {
+    "s_879266e81ed27e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c2637045-ccba-461c-b4ac-520aaab85ba3",
+        "model": "claude-opus-5-5"
+      },
+      "human_author": "er.wang <er.wang@lunarax.io>"
+    }
+  }
+}
