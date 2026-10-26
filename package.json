@@ -5,10 +5,10 @@
   "type": "module",
   "license": "MIT",
   "author": "Byreal Team (https://github.com/byreal-git)",
-  "homepage": "https://github.com/byreal-git/-byreal-evm-clmm-sdk",
+  "homepage": "https://github.com/byreal-git/byreal-evm-clmm-sdk",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/byreal-git/-byreal-evm-clmm-sdk.git"
+    "url": "git+https://github.com/byreal-git/byreal-evm-clmm-sdk.git"
   },
   "keywords": [
     "evm",
