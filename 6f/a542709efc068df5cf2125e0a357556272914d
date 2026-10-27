@@ -1,0 +1,14 @@
+README.md
+  h_d31d7ec01c5d56 3,19,41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2-bit.2+419f699",
+  "base_commit_sha": "6fa542709efc068df5cf2125e0a357556272914d",
+  "prompts": {},
+  "humans": {
+    "h_d31d7ec01c5d56": {
+      "author": "er.wang <er.wang@lunarax.io>"
+    }
+  }
+}
