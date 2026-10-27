@@ -1,6 +1,6 @@
 # Byreal EVM CLMM SDK
 
-Byreal EVM CLMM 合约（**Byreal 定制版 Uniswap V3**）的 TypeScript SDK。负责：
+Byreal EVM CLMM 合约的 TypeScript SDK。负责：
 
 - **链上读取**：池子状态、仓位、待领手续费、链上询价（ByrealQuoter）；
 - **本地数学**（0 RPC）：价格 / tick 换算、仓位资产、输入框金额联动、滑点下限、APR；
@@ -16,7 +16,7 @@ SDK **不包含**后端接口客户端：池子列表、仓位列表等请直接
 npm install @byreal-io/byreal-evm-clmm-sdk viem
 ```
 
-`viem`（`^2.22.0`）是 peer 依赖，由使用方安装；包是 ESM，Node.js 需 20.19+ 或 22.12+（这两个版本起 CJS 也能直接 `require`）。
+`viem`（`^2.22.0`）是 peer 依赖，由使用方安装；包是 ESM，Node.js 需 20.19+ 或 22.12+。
 
 ## 部署环境
 
@@ -38,7 +38,7 @@ const sdk = new EvmClmmSdk({ chainId: 5000, profileId: 'test' })
 const poolAddress = await sdk.chain.getPoolAddress({ tokenA, tokenB, tickSpacing: 1 })
 const poolState = await sdk.getRawPoolInfoByPoolAddress(poolAddress)
 
-// 2) 链上询价（池子开启动态费率时只能走这条路径）
+// 2) 链上询价
 const quote = await sdk.quoteSwap({ tokenIn: tokenA, tokenOut: tokenB, tickSpacing: 1, amountIn })
 
 // 3) 开仓：返回按顺序发送的未签名交易（可能含 approve），不会自动发送
@@ -119,32 +119,3 @@ OWNER=0x... npx tsx examples/02_read_positions.ts
 04 ~ 07 默认操作钱包在演示池里最新的仓位，也可以用 `TOKEN_ID=...` 指定。
 新开的仓位要等池子有成交才有手续费，在 06 之前再跑一次 08 就能看到手续费到账。
 
-## 开发
-
-```bash
-npm install
-npm run verify   # typecheck + 单元测试 + 构建 + dist 自检
-```
-
-开发环境需要 Node.js 20.19+ 或 22.12+。单元测试全部离线，连真实 RPC 的验证在 `examples/`。
-
-## 发布
-
-前提：`npm login` 的账号有 `@byreal-io` 发布权限；在主分支上、工作区干净、已配置 git 远端。
-
-```bash
-npm version patch    # 0.1.0 → 0.1.1；新增功能用 minor
-```
-
-这一条命令会依次自动完成：
-
-1. `preversion`：跑 `npm run verify`，不通过就中止，不会产生提交；
-2. `npm version`：改 `package.json` 版本号，提交一个名为 `0.1.1` 的 commit，并打 tag `v0.1.1`；
-3. `postversion`：`npm publish`（发布前 `prepublishOnly` 会重新构建并自检 dist）→ `git push` → `git push --tags`；
-4. tag 推上去后，`.github/workflows/release.yml` 会在 GitHub 建 Release 并附上打包好的 tgz（该 workflow 不发 npm）。
-
-账号开了 2FA 时，`npm publish` 会提示输入 OTP。想先看包里有什么：`npm pack --dry-run`。
-
-## 许可
-
-MIT。`raw` 层移植自 Uniswap `v3-sdk` / `sdk-core`（MIT），见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
