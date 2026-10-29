@@ -42,7 +42,7 @@ const MANTLE = {
 /** WMNT（Mantle 原生币包装合约） */
 const WMNT: Address = '0x78c1b0C915c4FAA5FffA6CAbf0219DA63d7f4cb8'
 
-/** 内置部署注册表。NPM 只能用 **proxy** 地址，禁止使用 implementation 地址。 */
+/** 内置部署注册表。NPM / RewardClaimVault 只能用 **proxy** 地址，禁止使用 implementation 地址。 */
 export const DEPLOYMENT_PROFILES: Record<DeploymentProfileId, IDeploymentProfileConfig> = {
   test: {
     ...MANTLE,
@@ -56,6 +56,7 @@ export const DEPLOYMENT_PROFILES: Record<DeploymentProfileId, IDeploymentProfile
       swapRouter: '0xcB81c75Dafd9183a2Baf82C18B16a84C22d9b791',
       multicall3: MULTICALL3_ADDRESS,
       weth: WMNT,
+      rewardClaimVault: '0xcD8Ef447b678Dd5aCE1e6BECf578748aD28d605f',
     },
   },
 
@@ -72,6 +73,7 @@ export const DEPLOYMENT_PROFILES: Record<DeploymentProfileId, IDeploymentProfile
       swapRouter: PLACEHOLDER_ADDRESS,
       multicall3: MULTICALL3_ADDRESS,
       weth: WMNT,
+      rewardClaimVault: PLACEHOLDER_ADDRESS,
     },
   },
 }

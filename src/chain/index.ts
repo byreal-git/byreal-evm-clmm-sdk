@@ -8,10 +8,17 @@
  *    所以它归入动态字段（每次 fresh 读），绝不进不变字段缓存；
  * 3. quote 必须带 extraFeeClass（构造时给默认档，逐调用可覆盖）。
  */
-import { decodeFunctionResult, encodeFunctionData, type Address, type Hex, type PublicClient } from 'viem'
+import {
+  decodeFunctionResult,
+  encodeFunctionData,
+  type Address,
+  type ContractFunctionParameters,
+  type Hex,
+  type PublicClient,
+} from 'viem'
 
 import type { ExtraFeeClass } from '../raw/index.js'
-import { ERC20_ABI, FACTORY_ABI, NPM_ABI, POOL_ABI, QUOTER_ABI } from '../abis.js'
+import { ERC20_ABI, FACTORY_ABI, NPM_ABI, POOL_ABI, QUOTER_ABI, REWARD_CLAIM_VAULT_ABI } from '../abis.js'
 import { MAX_UINT128, MULTICALL3_ADDRESS } from '../constants.js'
 import type {
   IClmmContracts,
@@ -20,10 +27,22 @@ import type {
   IPositionStateRaw,
   IQuoteSwapParams,
   IQuoteSwapReturn,
+  IRewardKey,
   ITokenInfo,
 } from '../types.js'
 
 const ZERO_ADDRESS: Address = '0x0000000000000000000000000000000000000000'
+
+/** Multicall3 自带的原生币余额查询，让原生余额能和 ERC20 余额拼进同一轮 multicall */
+const MULTICALL3_GET_ETH_BALANCE_ABI = [
+  {
+    type: 'function',
+    name: 'getEthBalance',
+    stateMutability: 'view',
+    inputs: [{ name: 'addr', type: 'address' }],
+    outputs: [{ name: 'balance', type: 'uint256' }],
+  },
+] as const
 
 /**
  * {@link Chain.getPositionStatesAndPendingFees} 单次 NPM.multicall 最多打包的子调用数。
@@ -512,41 +531,55 @@ export class Chain {
   /**
    * 开仓（mint）前置读：fresh 池子状态 + 用户两种代币的余额与授权。
    *
-   * RPC：**1 次 multicall（14 个 call：10 动态 + 2 余额 + 2 授权）**；
+   * RPC：**1 次 multicall（14 个 call：10 动态 + 2 余额 + 2 授权；读原生余额时再 +1）**；
    * 若该池子的不变字段（token0/token1/tickSpacing）尚未缓存，前面会多一次 multicall 去取，
    * 即冷启动 2 轮 multicall、热路径 1 轮。
    *
    * @param params.spender 授权对象，开仓场景固定是 NonfungiblePositionManager。
+   * @param params.withNativeBalance 为 true 时在同一轮 multicall 里多读一次原生币余额（原生币开仓 / 加仓用）。
    */
-  async getMintPrerequisites(params: { poolAddress: Address; userAddress: Address; spender: Address }): Promise<{
+  async getMintPrerequisites(params: {
+    poolAddress: Address
+    userAddress: Address
+    spender: Address
+    withNativeBalance?: boolean
+  }): Promise<{
     poolState: IPoolStateRaw
     balance0: bigint
     balance1: bigint
     allowance0: bigint
     allowance1: bigint
+    /** 仅 `withNativeBalance: true` 时有值 */
+    nativeBalance?: bigint
   }> {
-    const { poolAddress, userAddress, spender } = params
+    const { poolAddress, userAddress, spender, withNativeBalance = false } = params
     const meta = await this.getPoolImmutable(poolAddress)
 
+    const contracts: ContractFunctionParameters[] = [
+      ...this.poolDynamicCalls(poolAddress),
+      { address: meta.token0, abi: ERC20_ABI, functionName: 'balanceOf', args: [userAddress] },
+      { address: meta.token1, abi: ERC20_ABI, functionName: 'balanceOf', args: [userAddress] },
+      { address: meta.token0, abi: ERC20_ABI, functionName: 'allowance', args: [userAddress, spender] },
+      { address: meta.token1, abi: ERC20_ABI, functionName: 'allowance', args: [userAddress, spender] },
+    ]
+    if (withNativeBalance) {
+      contracts.push({
+        address: this.multicallAddress,
+        abi: MULTICALL3_GET_ETH_BALANCE_ABI,
+        functionName: 'getEthBalance',
+        args: [userAddress],
+      })
+    }
     const raw = await this.publicClient.multicall({
-      contracts: [
-        ...this.poolDynamicCalls(poolAddress),
-        { address: meta.token0, abi: ERC20_ABI, functionName: 'balanceOf', args: [userAddress] },
-        { address: meta.token1, abi: ERC20_ABI, functionName: 'balanceOf', args: [userAddress] },
-        { address: meta.token0, abi: ERC20_ABI, functionName: 'allowance', args: [userAddress, spender] },
-        { address: meta.token1, abi: ERC20_ABI, functionName: 'allowance', args: [userAddress, spender] },
-      ],
+      contracts,
       multicallAddress: this.multicallAddress,
       allowFailure: false,
     })
 
     const dynamic = raw.slice(0, POOL_DYNAMIC_CALL_COUNT) as unknown as PoolDynamicTuple
-    const [balance0, balance1, allowance0, allowance1] = raw.slice(POOL_DYNAMIC_CALL_COUNT) as unknown as [
-      bigint,
-      bigint,
-      bigint,
-      bigint,
-    ]
+    const [balance0, balance1, allowance0, allowance1, nativeBalance] = raw.slice(
+      POOL_DYNAMIC_CALL_COUNT,
+    ) as unknown as [bigint, bigint, bigint, bigint, bigint | undefined]
 
     return {
       poolState: this.assemblePoolState(poolAddress, meta, dynamic),
@@ -554,6 +587,7 @@ export class Chain {
       balance1,
       allowance0,
       allowance1,
+      ...(withNativeBalance ? { nativeBalance } : {}),
     }
   }
 
@@ -563,22 +597,100 @@ export class Chain {
    * RPC：`positions` 1 次 → （必要时）Factory 反查 1 次 → 状态+余额+授权 1 次 multicall。
    * 池子地址与不变字段命中缓存后稳定在 2 次请求。
    */
-  async getModifyPrerequisites(params: { tokenId: bigint; userAddress: Address; spender: Address }): Promise<{
+  async getModifyPrerequisites(params: {
+    tokenId: bigint
+    userAddress: Address
+    spender: Address
+    withNativeBalance?: boolean
+  }): Promise<{
     positionState: IPositionStateRaw
     poolState: IPoolStateRaw
     balance0: bigint
     balance1: bigint
     allowance0: bigint
     allowance1: bigint
+    nativeBalance?: bigint
   }> {
-    const { tokenId, userAddress, spender } = params
+    const { tokenId, userAddress, spender, withNativeBalance } = params
 
     const positionState = await this.getRawPositionInfo(tokenId)
     const poolAddress = await this.getPoolAddressByPosition(positionState)
 
     // 拿到 poolAddress 之后就完全等价于开仓的前置读，直接复用，避免两处逻辑各写一遍 multicall。
-    const rest = await this.getMintPrerequisites({ poolAddress, userAddress, spender })
+    const rest = await this.getMintPrerequisites({ poolAddress, userAddress, spender, withNativeBalance })
     return { positionState, ...rest }
+  }
+
+  // =========================================================================
+  // 奖励金库（ByrealRewardClaimVault）
+  // =========================================================================
+
+  /**
+   * 批量读奖励账本的已领累计额（`claimedAmount`），返回值与 `keys` 一一对应。
+   *
+   * RPC：1 次 multicall（`keys` 为空时 0 次）。
+   * 与凭证的 `syncedAmount` 相减即为可领额；RPC 失败会直接抛错，不要把失败当成 0。
+   */
+  async getRewardClaimedAmountList(keys: readonly IRewardKey[]): Promise<bigint[]> {
+    const vault = this.requireRewardClaimVault()
+    if (keys.length === 0) return []
+    const raw = await this.publicClient.multicall({
+      contracts: keys.map((key) => this.claimedAmountCall(vault, key)),
+      multicallAddress: this.multicallAddress,
+      allowFailure: false,
+    })
+    return raw as bigint[]
+  }
+
+  /**
+   * 领奖励的前置读：金库暂停状态 + 各账本键的已领累计额 + 金库对各奖励代币的余额。
+   *
+   * RPC：**1 次 multicall**（1 + keys.length + rewardTokens.length 个 call）。
+   * `claimedAmounts` 与 `keys`、`vaultBalances` 与 `rewardTokens` 分别一一对应。
+   */
+  async getRewardClaimPrerequisites(params: {
+    keys: readonly IRewardKey[]
+    rewardTokens: readonly Address[]
+  }): Promise<{ vault: Address; paused: boolean; claimedAmounts: bigint[]; vaultBalances: bigint[] }> {
+    const { keys, rewardTokens } = params
+    const vault = this.requireRewardClaimVault()
+    const contracts: ContractFunctionParameters[] = [
+      { address: vault, abi: REWARD_CLAIM_VAULT_ABI, functionName: 'paused' },
+      ...keys.map((key) => this.claimedAmountCall(vault, key)),
+      ...rewardTokens.map((token) => ({ address: token, abi: ERC20_ABI, functionName: 'balanceOf', args: [vault] })),
+    ]
+    const raw = await this.publicClient.multicall({
+      contracts,
+      multicallAddress: this.multicallAddress,
+      allowFailure: false,
+    })
+    return {
+      vault,
+      paused: raw[0] as boolean,
+      claimedAmounts: raw.slice(1, 1 + keys.length) as bigint[],
+      vaultBalances: raw.slice(1 + keys.length) as bigint[],
+    }
+  }
+
+  /** 金库 proxy 地址；未配置或仍是零地址占位时直接报错，避免把交易发到零地址 */
+  private requireRewardClaimVault(): Address {
+    const vault = this.contracts.rewardClaimVault
+    if (!vault || vault === ZERO_ADDRESS) {
+      throw new Error(
+        '[evm-clmm-sdk] 当前部署未配置奖励金库（contracts.rewardClaimVault），' +
+          '请换用已部署金库的 profileId，或在构造 SDK 时通过 contracts 传入金库 proxy 地址。',
+      )
+    }
+    return vault
+  }
+
+  private claimedAmountCall(vault: Address, key: IRewardKey) {
+    return {
+      address: vault,
+      abi: REWARD_CLAIM_VAULT_ABI,
+      functionName: 'claimedAmount',
+      args: [key.positionTokenId, key.rewardToken, key.ruleId, key.ruleType, key.epochTime],
+    } as const
   }
 
   // =========================================================================

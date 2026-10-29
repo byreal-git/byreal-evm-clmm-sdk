@@ -37,6 +37,12 @@ import { AbstractLiquidityClient, type ICreatePositionMeta } from './abstract.js
 /** uint256 最大值：仅用于「调用方自带快照、跳过前置读」时把余额/授权当作无穷大 */
 const UNLIMITED = (1n << 256n) - 1n
 
+/** collect 的 recipient 传零地址 = 资产先留在 NPM，供同一笔 multicall 里的 unwrapWETH9 / sweepToken 转出 */
+const ZERO_ADDRESS: Address = '0x0000000000000000000000000000000000000000'
+
+/** 池子两边的下标：0 = token0，1 = token1 */
+type Side = 0 | 1
+
 /** 前置读拿回来的一组上下文（调用方自带快照时会退化成「无穷余额 + 无穷授权」） */
 interface IWriteContext {
   poolState: IPoolStateRaw
@@ -44,6 +50,8 @@ interface IWriteContext {
   balance1: bigint
   allowance0: bigint
   allowance1: bigint
+  /** 原生币余额，只在原生币开仓 / 加仓时读 */
+  nativeBalance?: bigint
   /** true = 本次没有读链，余额/授权校验被跳过（责任在调用方） */
   offline: boolean
 }
@@ -71,8 +79,9 @@ export class CLMMClient extends AbstractLiquidityClient {
    * - amount0Min/amount1Min 走 `mintAmountsWithSlippage`（按价格漂移严格算，不是金额线性打折）；
    * - approve 只授权本次需要的额度，**不做无限授权**（额度策略交给上层，SDK 不替用户扩大风险敞口）。
    *
-   * 原生币（ETH/MNT）开仓不在这里处理：先由调用方把原生币换成 WETH/WMNT
-   * 再走本方法，mint 交易的 value 恒为 0，语义最简单。
+   * 原生币（MNT）开仓：传 `useNative: true`（池子须含 WMNT），WMNT 那一边随交易 value 发给 NPM，
+   * 主交易变成 `multicall([mint, refundETH])`：合约只 wrap 实际用掉的部分，多余的同笔退回。
+   * 不传时 value 恒为 0，两边都按 ERC20 处理。
    *
    * Byreal 定制合约的 mint 结构体与原生 V3 有两处不同（选择器随之变为 0xda28d63d）：
    * 第 3 个字段是 tickSpacing（不再是 fee），尾部多一个 followTokenId（默认 0 = 不跟随；
@@ -88,6 +97,7 @@ export class CLMMClient extends AbstractLiquidityClient {
       followTokenId = 0n,
       autoApprove = true,
       validateBalance = true,
+      useNative = false,
       slippageBps = DEFAULT_SLIPPAGE_BPS,
       deadlineSec = DEFAULT_DEADLINE_SEC,
     } = params
@@ -99,6 +109,7 @@ export class CLMMClient extends AbstractLiquidityClient {
     // —— ① 前置读：fresh 池子状态 + 余额 + 授权（1 次 multicall）——
     const ctx = await this.loadMintContext({ poolAddress, userAddress, params })
     const { poolState } = ctx
+    const nativeSide = useNative ? this.nativeSide(poolState.token0, poolState.token1, 'useNative') : undefined
     const [token0, token1] = await this.getTokenInfoPair(poolState.token0, poolState.token1)
 
     // —— ② 本地数学：对齐 tick → 反推另一边 → 算滑点下限 ——
@@ -143,36 +154,39 @@ export class CLMMClient extends AbstractLiquidityClient {
       amount1: amounts.amount1,
       autoApprove,
       validateBalance,
+      nativeSide,
     })
 
     // —— ④ 拼 mint calldata ——
     const deadline = deadlineFromNow(deadlineSec)
+    const mint = encodeFunctionData({
+      abi: NPM_ABI,
+      functionName: 'mint',
+      args: [
+        {
+          token0: poolState.token0,
+          token1: poolState.token1,
+          tickSpacing: poolState.tickSpacing,
+          tickLower,
+          tickUpper,
+          amount0Desired: amounts.amount0,
+          amount1Desired: amounts.amount1,
+          amount0Min,
+          amount1Min,
+          recipient,
+          deadline,
+          followTokenId,
+        },
+      ],
+    })
+    const payment = this.withNativePayment(mint, nativeSide, amounts)
     transactions.push({
       to: this.npm,
-      data: encodeFunctionData({
-        abi: NPM_ABI,
-        functionName: 'mint',
-        args: [
-          {
-            token0: poolState.token0,
-            token1: poolState.token1,
-            tickSpacing: poolState.tickSpacing,
-            tickLower,
-            tickUpper,
-            amount0Desired: amounts.amount0,
-            amount1Desired: amounts.amount1,
-            amount0Min,
-            amount1Min,
-            recipient,
-            deadline,
-            followTokenId,
-          },
-        ],
-      }),
-      // 池子只认 ERC20；用原生币请先 wrap，这里恒为 0
-      value: 0n,
+      ...payment,
       chainId: this.chainId,
-      label: `开仓 mint ${token0.symbol}/${token1.symbol} ${poolState.tradeFeeRate / 10000}%（区间 [${tickLower}, ${tickUpper}]）`,
+      label:
+        `开仓 mint ${token0.symbol}/${token1.symbol} ${poolState.tradeFeeRate / 10000}%（区间 [${tickLower}, ${tickUpper}]）` +
+        (payment.value > 0n ? `，${nativeSide === 0 ? token0.symbol : token1.symbol} 一侧用原生币支付` : ''),
     })
 
     return this.toReturn(transactions, {
@@ -201,7 +215,7 @@ export class CLMMClient extends AbstractLiquidityClient {
    *
    * RPC：`positions` 1 次 → （首次）Factory 反查 1 次 → 前置 multicall 1 次，
    *      代币元数据未缓存再多 1 次；热路径实测 2 次请求。
-   * 产出交易：**0~2 笔 approve + 1 笔 `NPM.increaseLiquidity`**。
+   * 产出交易：**0~2 笔 approve + 1 笔 `NPM.increaseLiquidity`**（`useNative` 时为 `multicall([increaseLiquidity, refundETH])`）。
    */
   async addLiquidity(params: IAddLiquidityParams): Promise<ITransactionReturn<ILiquidityMeta>> {
     const {
@@ -210,6 +224,7 @@ export class CLMMClient extends AbstractLiquidityClient {
       base,
       baseAmount,
       autoApprove = true,
+      useNative = false,
       slippageBps = DEFAULT_SLIPPAGE_BPS,
       deadlineSec = DEFAULT_DEADLINE_SEC,
     } = params
@@ -225,8 +240,10 @@ export class CLMMClient extends AbstractLiquidityClient {
       params,
       // 加仓要花钱，除非调用方明确关掉 autoApprove 并自带快照，否则必须读 fresh 余额/授权
       allowOffline: autoApprove === false,
+      withNativeBalance: useNative,
     })
     const { poolState } = ctx
+    const nativeSide = useNative ? this.nativeSide(poolState.token0, poolState.token1, 'useNative') : undefined
     const [token0, token1] = await this.getTokenInfoPair(poolState.token0, poolState.token1)
 
     // —— ② 本地数学：沿用仓位既有区间 ——
@@ -262,29 +279,33 @@ export class CLMMClient extends AbstractLiquidityClient {
       amount0: amounts.amount0,
       amount1: amounts.amount1,
       autoApprove,
+      nativeSide,
     })
 
     // —— ④ 拼 increaseLiquidity calldata ——
     const deadline = deadlineFromNow(deadlineSec)
+    const increase = encodeFunctionData({
+      abi: NPM_ABI,
+      functionName: 'increaseLiquidity',
+      args: [
+        {
+          tokenId,
+          amount0Desired: amounts.amount0,
+          amount1Desired: amounts.amount1,
+          amount0Min,
+          amount1Min,
+          deadline,
+        },
+      ],
+    })
+    const payment = this.withNativePayment(increase, nativeSide, amounts)
     transactions.push({
       to: this.npm,
-      data: encodeFunctionData({
-        abi: NPM_ABI,
-        functionName: 'increaseLiquidity',
-        args: [
-          {
-            tokenId,
-            amount0Desired: amounts.amount0,
-            amount1Desired: amounts.amount1,
-            amount0Min,
-            amount1Min,
-            deadline,
-          },
-        ],
-      }),
-      value: 0n,
+      ...payment,
       chainId: this.chainId,
-      label: `加仓 #${tokenId}（${token0.symbol}/${token1.symbol}）`,
+      label:
+        `加仓 #${tokenId}（${token0.symbol}/${token1.symbol}）` +
+        (payment.value > 0n ? `，${nativeSide === 0 ? token0.symbol : token1.symbol} 一侧用原生币支付` : ''),
     })
 
     return this.toReturn(transactions, {
@@ -315,6 +336,9 @@ export class CLMMClient extends AbstractLiquidityClient {
    * 所以 `params.collect !== false`（默认 true）时，这里用
    * `NPM.multicall([decreaseLiquidity, collect(uint128.max)])` 把两步打成**一笔原子交易**，
    * 顺带把这期间累积的手续费一起领走。只有明确传 `collect: false` 才会退化成裸 decrease。
+   *
+   * `receiveNative: true` 时 collect 先把资产留在 NPM，同一笔里再 `unwrapWETH9 + sweepToken` 转给 recipient，
+   * WMNT 那一边以原生 MNT 到账。
    */
   async decreaseLiquidity(params: IDecreaseLiquidityParams): Promise<ITransactionReturn<IDecreaseMeta>> {
     const {
@@ -322,9 +346,17 @@ export class CLMMClient extends AbstractLiquidityClient {
       userAddress,
       recipient = userAddress,
       collect = true,
+      receiveNative = false,
       slippageBps = DEFAULT_SLIPPAGE_BPS,
       deadlineSec = DEFAULT_DEADLINE_SEC,
     } = params
+
+    if (receiveNative && !collect) {
+      throw new Error(
+        '[evm-clmm-sdk] receiveNative 需要在同一笔里 collect，不能与 collect: false 同时使用：' +
+          '裸 decrease 不会把资产转出，也就没有可以 unwrap 的 WMNT。',
+      )
+    }
 
     const hasPercent = params.percent !== undefined
     const hasLiquidity = params.liquidity !== undefined
@@ -385,7 +417,7 @@ export class CLMMClient extends AbstractLiquidityClient {
     ]
     if (collect) {
       // uint128.max = 「能领多少领多少」：刚撤出的本金 + 这期间累积的手续费一次领干净
-      calls.push(this.encodeCollect({ tokenId, recipient, amount0Max: MAX_UINT128, amount1Max: MAX_UINT128 }))
+      calls.push(...this.encodeCollectTo({ poolState, tokenId, recipient, receiveNative }))
     }
 
     const transactions: IUnsignedTx[] = [
@@ -395,7 +427,7 @@ export class CLMMClient extends AbstractLiquidityClient {
         value: 0n,
         chainId: this.chainId,
         label: collect
-          ? `减仓 #${tokenId}（decreaseLiquidity + collect 一笔 multicall）`
+          ? `减仓 #${tokenId}（decreaseLiquidity + collect${receiveNative ? ' + 原生币到账' : ''} 一笔 multicall）`
           : `减仓 #${tokenId}（仅 decreaseLiquidity，资产留在 tokensOwed，需另行 collect）`,
       },
     ]
@@ -430,6 +462,9 @@ export class CLMMClient extends AbstractLiquidityClient {
    *
    * ⚠️ 走读链分支时，staticcall 会过合约的 `isAuthorizedForToken` 检查，所以 `userAddress` 必须是
    * 该仓位的 owner 或被 approve 的 operator，否则这里就会报错（真发交易同样会 revert，提前暴露更好）。
+   *
+   * `receiveNative: true` 时主交易变成 `multicall([collect, unwrapWETH9, sweepToken])`，WMNT 那一边以原生 MNT 到账；
+   * 需要知道仓位的两种代币，没传 `positionState` 时多读 1 次 `positions`。
    */
   async collectFees(params: ICollectFeesParams): Promise<ITransactionReturn<IPendingFees>> {
     const {
@@ -438,7 +473,18 @@ export class CLMMClient extends AbstractLiquidityClient {
       recipient = userAddress,
       amount0Max = MAX_UINT128,
       amount1Max = MAX_UINT128,
+      receiveNative = false,
     } = params
+
+    let nativeTokens: { token0: Address; token1: Address } | undefined
+    if (receiveNative) {
+      if (params.positionState && params.positionState.tokenId !== tokenId) {
+        throw new Error(
+          `[evm-clmm-sdk] 传入的 positionState.tokenId=${params.positionState.tokenId} 与参数 tokenId=${tokenId} 不一致。`,
+        )
+      }
+      nativeTokens = params.positionState ?? (await this._chain.getRawPositionInfo(tokenId))
+    }
 
     // —— ① 前置读：静态预演一次 collect，拿精确可领额（调用方自带快照时跳过）——
     let pending: IPendingFees
@@ -465,10 +511,12 @@ export class CLMMClient extends AbstractLiquidityClient {
     const transactions: IUnsignedTx[] = [
       {
         to: this.npm,
-        data: this.encodeCollect({ tokenId, recipient, amount0Max, amount1Max }),
+        data: this.packCalls(
+          this.encodeCollectTo({ poolState: nativeTokens, tokenId, recipient, receiveNative, amount0Max, amount1Max }),
+        ),
         value: 0n,
         chainId: this.chainId,
-        label: `提取仓位 #${tokenId} 的手续费 / 已撤本金`,
+        label: `提取仓位 #${tokenId} 的手续费 / 已撤本金${receiveNative ? '（WMNT 以原生币到账）' : ''}`,
       },
     ]
 
@@ -488,12 +536,14 @@ export class CLMMClient extends AbstractLiquidityClient {
    * 为什么必须打包成一笔：`burn` 要求仓位的 liquidity == 0 **且** tokensOwed 已清空，
    * 分三笔发会有中间状态（撤了没领 / 领了没销毁），用户中断就留下脏仓位。
    * 仓位流动性本来就是 0 时（只剩手续费待领），自动跳过 decrease 那一条。
+   * `receiveNative: true` 时在 burn 之前插入 `unwrapWETH9 + sweepToken`，WMNT 那一边以原生 MNT 到账。
    */
   async closePosition(params: IClosePositionParams): Promise<ITransactionReturn<IDecreaseMeta>> {
     const {
       tokenId,
       userAddress,
       recipient = userAddress,
+      receiveNative = false,
       slippageBps = DEFAULT_SLIPPAGE_BPS,
       deadlineSec = DEFAULT_DEADLINE_SEC,
     } = params
@@ -533,7 +583,7 @@ export class CLMMClient extends AbstractLiquidityClient {
       calls.push(this.encodeDecrease({ tokenId, liquidity, amount0Min, amount1Min, deadline }))
     }
     // 本金 + 手续费一次领干净，否则下面的 burn 会因 tokensOwed 非 0 而 revert
-    calls.push(this.encodeCollect({ tokenId, recipient, amount0Max: MAX_UINT128, amount1Max: MAX_UINT128 }))
+    calls.push(...this.encodeCollectTo({ poolState, tokenId, recipient, receiveNative }))
     calls.push(encodeFunctionData({ abi: NPM_ABI, functionName: 'burn', args: [tokenId] }))
 
     // —— ③ 拼一笔 multicall ——
@@ -544,8 +594,8 @@ export class CLMMClient extends AbstractLiquidityClient {
         value: 0n,
         chainId: this.chainId,
         label:
-          `关仓 #${tokenId}（${liquidity > 0n ? 'decreaseLiquidity + ' : ''}collect + burn，` +
-          `${calls.length} 步打成一笔 multicall）`,
+          `关仓 #${tokenId}（${liquidity > 0n ? 'decreaseLiquidity + ' : ''}collect` +
+          `${receiveNative ? ' + 原生币到账' : ''} + burn，${calls.length} 步打成一笔 multicall）`,
       },
     ]
 
@@ -588,7 +638,12 @@ export class CLMMClient extends AbstractLiquidityClient {
     if (params.poolState && params.autoApprove === false) {
       return this.offlineContext(params.poolState)
     }
-    const pre = await this._chain.getMintPrerequisites({ poolAddress, userAddress, spender: this.npm })
+    const pre = await this._chain.getMintPrerequisites({
+      poolAddress,
+      userAddress,
+      spender: this.npm,
+      withNativeBalance: params.useNative === true,
+    })
     return { ...pre, poolState: params.poolState ?? pre.poolState, offline: false }
   }
 
@@ -603,8 +658,9 @@ export class CLMMClient extends AbstractLiquidityClient {
     userAddress: Address
     params: { poolState?: IPoolStateRaw; positionState?: IPositionStateRaw }
     allowOffline: boolean
+    withNativeBalance?: boolean
   }): Promise<{ positionState: IPositionStateRaw; ctx: IWriteContext }> {
-    const { tokenId, userAddress, params, allowOffline } = args
+    const { tokenId, userAddress, params, allowOffline, withNativeBalance } = args
 
     if (allowOffline && params.poolState && params.positionState) {
       if (params.positionState.tokenId !== tokenId) {
@@ -615,7 +671,7 @@ export class CLMMClient extends AbstractLiquidityClient {
       return { positionState: params.positionState, ctx: this.offlineContext(params.poolState) }
     }
 
-    const pre = await this._chain.getModifyPrerequisites({ tokenId, userAddress, spender: this.npm })
+    const pre = await this._chain.getModifyPrerequisites({ tokenId, userAddress, spender: this.npm, withNativeBalance })
     return {
       positionState: params.positionState ?? pre.positionState,
       ctx: {
@@ -624,6 +680,7 @@ export class CLMMClient extends AbstractLiquidityClient {
         balance1: pre.balance1,
         allowance0: pre.allowance0,
         allowance1: pre.allowance1,
+        nativeBalance: pre.nativeBalance,
         offline: false,
       },
     }
@@ -637,6 +694,7 @@ export class CLMMClient extends AbstractLiquidityClient {
       balance1: UNLIMITED,
       allowance0: UNLIMITED,
       allowance1: UNLIMITED,
+      nativeBalance: UNLIMITED,
       offline: true,
     }
   }
@@ -654,6 +712,8 @@ export class CLMMClient extends AbstractLiquidityClient {
    * ⚠️ 少数老代币（USDT 等）要求「先把 allowance 置 0 再改成新值」，
    * 本层不自动插那笔 approve(0)（主流交易对不涉及，Uniswap 前端也是按需处理）；
    * 真遇到时上层自己补一笔 approve(0) 放到最前面即可。
+   *
+   * `nativeSide` 那一边用原生币支付（随交易 value 发给 NPM 现场 wrap）：余额查原生币，不需要 approve。
    */
   private prepareFunding(args: {
     ctx: IWriteContext
@@ -663,15 +723,25 @@ export class CLMMClient extends AbstractLiquidityClient {
     amount1: bigint
     autoApprove: boolean
     validateBalance?: boolean
+    nativeSide?: Side
   }): { transactions: IUnsignedTx[]; approvals: Array<{ token: Address; amount: bigint }> } {
-    const { ctx, token0, token1, amount0, amount1, autoApprove, validateBalance = true } = args
+    const { ctx, token0, token1, amount0, amount1, autoApprove, validateBalance = true, nativeSide } = args
     const transactions: IUnsignedTx[] = []
     const approvals: Array<{ token: Address; amount: bigint }> = []
 
-    const sides: Array<{ token: ITokenInfo; need: bigint; balance: bigint; allowance: bigint }> = [
-      { token: token0, need: amount0, balance: ctx.balance0, allowance: ctx.allowance0 },
-      { token: token1, need: amount1, balance: ctx.balance1, allowance: ctx.allowance1 },
+    const sides: Array<{ token: ITokenInfo; need: bigint; balance: bigint; allowance: bigint; name: string }> = [
+      { token: token0, need: amount0, balance: ctx.balance0, allowance: ctx.allowance0, name: `${token0.symbol}（${token0.address}）` },
+      { token: token1, need: amount1, balance: ctx.balance1, allowance: ctx.allowance1, name: `${token1.symbol}（${token1.address}）` },
     ]
+    if (nativeSide !== undefined) {
+      const side = sides[nativeSide]
+      sides[nativeSide] = {
+        ...side,
+        balance: ctx.nativeBalance ?? 0n,
+        allowance: UNLIMITED,
+        name: `原生币（代替 ${side.token.symbol} 支付，另需留出 gas）`,
+      }
+    }
 
     for (const side of sides) {
       if (side.need <= 0n) continue
@@ -679,9 +749,9 @@ export class CLMMClient extends AbstractLiquidityClient {
       // 费用估算只关心交易结构与 Gas，不应被固定模拟金额或钱包余额阻断。
       if (validateBalance && side.balance < side.need) {
         throw new Error(
-          `[evm-clmm-sdk] ${side.token.symbol} 余额不足：本次需要 ` +
+          `[evm-clmm-sdk] ${side.name} 余额不足：本次需要 ` +
             `${formatUnits(side.need, side.token.decimals)}，钱包只有 ` +
-            `${formatUnits(side.balance, side.token.decimals)}（${side.token.address}）。`,
+            `${formatUnits(side.balance, side.token.decimals)}。`,
         )
       }
 
@@ -813,6 +883,61 @@ export class CLMMClient extends AbstractLiquidityClient {
         },
       ],
     })
+  }
+
+  /**
+   * collect 及其到账方式：默认直接打给 recipient；`receiveNative` 时 collect 先留在 NPM，
+   * 再 `unwrapWETH9` 把 WMNT 换成原生币、`sweepToken` 把另一边转出，都发给 recipient。
+   *
+   * unwrap / sweep 的 amountMinimum 传 0：本金下限已由 decreaseLiquidity 的 amount0Min/amount1Min 把关，
+   * collect 本身没有下限语义；这里再按预估值设下限，只会在手续费读数稍旧时让交易白白 revert。
+   */
+  private encodeCollectTo(args: {
+    poolState?: { token0: Address; token1: Address }
+    tokenId: bigint
+    recipient: Address
+    receiveNative: boolean
+    amount0Max?: bigint
+    amount1Max?: bigint
+  }): Hex[] {
+    const { poolState, tokenId, recipient, receiveNative, amount0Max = MAX_UINT128, amount1Max = MAX_UINT128 } = args
+    if (!receiveNative) return [this.encodeCollect({ tokenId, recipient, amount0Max, amount1Max })]
+
+    if (!poolState) throw new Error('[evm-clmm-sdk] 内部错误：receiveNative 缺少仓位代币信息')
+    const nativeSide = this.nativeSide(poolState.token0, poolState.token1, 'receiveNative')
+    const otherToken = nativeSide === 0 ? poolState.token1 : poolState.token0
+    return [
+      this.encodeCollect({ tokenId, recipient: ZERO_ADDRESS, amount0Max, amount1Max }),
+      encodeFunctionData({ abi: NPM_ABI, functionName: 'unwrapWETH9', args: [0n, recipient] }),
+      encodeFunctionData({ abi: NPM_ABI, functionName: 'sweepToken', args: [otherToken, 0n, recipient] }),
+    ]
+  }
+
+  /**
+   * 原生币支付：WMNT 那一边的投入量作为交易 value 发给 NPM，合约的 `pay()` 现场 wrap 实际用到的部分，
+   * 同一笔里紧跟 `refundETH` 把没用完的退回。refundETH 必须在同一笔：
+   * 留在 NPM 里的原生币任何人都能用 refundETH 取走。
+   * 那一边投入量为 0（价格在区间外、只需另一种币）时退化成普通调用、value 为 0。
+   */
+  private withNativePayment(
+    call: Hex,
+    nativeSide: Side | undefined,
+    amounts: { amount0: bigint; amount1: bigint },
+  ): { data: Hex; value: bigint } {
+    const value = nativeSide === undefined ? 0n : nativeSide === 0 ? amounts.amount0 : amounts.amount1
+    if (value <= 0n) return { data: call, value: 0n }
+    return { data: this.packCalls([call, encodeFunctionData({ abi: NPM_ABI, functionName: 'refundETH' })]), value }
+  }
+
+  /** WMNT（`contracts.weth`，即 NPM 的 WETH9）在池子的哪一边；池子不含 WMNT 时报错 */
+  private nativeSide(token0: Address, token1: Address, flag: 'useNative' | 'receiveNative'): Side {
+    const weth = this._chain.contracts.weth.toLowerCase()
+    if (token0.toLowerCase() === weth) return 0
+    if (token1.toLowerCase() === weth) return 1
+    throw new Error(
+      `[evm-clmm-sdk] ${flag} 只适用于含原生币包装代币（${this._chain.contracts.weth}）的池子，` +
+        `本池是 ${token0} / ${token1}。`,
+    )
   }
 
   /**

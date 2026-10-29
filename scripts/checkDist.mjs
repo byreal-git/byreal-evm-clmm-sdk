@@ -31,9 +31,9 @@ const expectExports = (mod, label, names) => {
   const missing = names.filter((n) => mod[n] === undefined)
   if (missing.length) throw new Error(`${label} 缺少导出：${missing.join(', ')}`)
 }
-expectExports(core, '.', ['EvmClmmSdk', 'Chain', 'CLMMClient', 'DEPLOYMENT_PROFILES', 'tickToPrice', 'getTicksByPercentRange'])
+expectExports(core, '.', ['EvmClmmSdk', 'Chain', 'CLMMClient', 'RewardClient', 'REWARD_CLAIM_VAULT_ABI', 'DEPLOYMENT_PROFILES', 'tickToPrice', 'getTicksByPercentRange'])
 expectExports(compat, './compat', ['ByrealClmmSdk', 'CompatChain', 'parseTokenIdFromReceipt'])
-expectExports(raw, './raw', ['Pool', 'Position', 'Trade', 'NonfungiblePositionManager', 'SwapRouter', 'SwapQuoter', 'TickMath'])
+expectExports(raw, './raw', ['Pool', 'Position', 'Trade', 'NonfungiblePositionManager', 'SwapRouter', 'SwapQuoter', 'TickMath', 'RewardClaimVault', 'rewardClaimVaultAbi'])
 
 // 构造 + 本地数学（覆盖 JSBI / decimal.js-light 等 CJS 依赖在 Node ESM 下的互操作）
 const sdk = new core.EvmClmmSdk({ chainId: 5000, profileId: 'test' })

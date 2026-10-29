@@ -4,9 +4,11 @@ Byreal EVM CLMM 合约的 TypeScript SDK。负责：
 
 - **链上读取**：池子状态、仓位、待领手续费、链上询价（ByrealQuoter）；
 - **本地数学**（0 RPC）：价格 / tick 换算、仓位资产、输入框金额联动、滑点下限、APR；
-- **构建未签名交易**：开仓、加仓、减仓、领手续费、关仓（approve 按需前置），签名与广播由调用方完成。
+- **构建未签名交易**：开仓、加仓、减仓、领手续费、关仓（approve 按需前置），签名与广播由调用方完成；
+  含 WMNT 的池子可以直接用原生 MNT 投入 / 到账（`useNative` / `receiveNative`）；
+- **奖励领取**：凭 Byreal 后端签发的凭证从 RewardClaimVault 领奖励（`claimRewards`）。
 
-SDK **不包含**后端接口客户端：池子列表、仓位列表等请直接调用 Byreal 后端接口。
+SDK **不包含**后端接口客户端：池子列表、仓位列表、奖励凭证等请直接调用 Byreal 后端接口。
 
 > ⚠️ 只支持 Byreal 定制合约（池身份键 `(token0, token1, tickSpacing)`、`extraFeeClass` 等），与官方 Uniswap V3 ABI / SDK 不兼容，不能混用。
 
@@ -71,9 +73,9 @@ for (const tx of transactions) {
 
 | import                                  | 内容                                                                                   |
 | --------------------------------------- | -------------------------------------------------------------------------------------- |
-| `@byreal-io/byreal-evm-clmm-sdk`        | 核心：`EvmClmmSdk`、`Chain`、`CLMMClient`、本地数学、ABI、常量与部署注册表              |
+| `@byreal-io/byreal-evm-clmm-sdk`        | 核心：`EvmClmmSdk`、`Chain`、`CLMMClient`、`RewardClient`、本地数学、ABI、常量与部署注册表 |
 | `@byreal-io/byreal-evm-clmm-sdk/compat` | Solana 版 SDK 调用形状兼容层（`ByrealClmmSdk` / `CompatChain` / `chain.offchain.*`）     |
-| `@byreal-io/byreal-evm-clmm-sdk/raw`    | 底层：`Pool` / `Position` / `Trade` 实体，NPM / SwapRouter / Quoter / Multicall calldata 编码 |
+| `@byreal-io/byreal-evm-clmm-sdk/raw`    | 底层：`Pool` / `Position` / `Trade` 实体，NPM / SwapRouter / Quoter / Multicall / RewardClaimVault calldata 编码 |
 
 详细说明见 [docs/core.md](docs/core.md)（核心）与 [docs/compat.md](docs/compat.md)（compat）。
 

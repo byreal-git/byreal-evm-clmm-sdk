@@ -11,6 +11,7 @@ export { EvmClmmSdk } from './client.js'
 export { Chain } from './chain/index.js'
 export { CLMMClient } from './liquidity/clmm.js'
 export { AbstractLiquidityClient, type ICreatePositionMeta } from './liquidity/abstract.js'
+export { RewardClient } from './reward/index.js'
 
 // ---- 类型契约（全部是 interface / type，编译期擦除）----
 export * from './types.js'

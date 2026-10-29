@@ -24,8 +24,10 @@ export interface IClmmContracts {
   swapRouter?: Address
   /** Multicall3（批量只读聚合，缺省用官方通用地址） */
   multicall3?: Address
-  /** 原生币包装合约（WETH / WMNT），开仓时把原生币换成 ERC20 要用 */
+  /** 原生币包装合约（WETH / WMNT），必须与 NPM 的 `WETH9()` 一致：`useNative` / `receiveNative` 靠它判断哪一边是原生币 */
   weth: Address
+  /** ByrealRewardClaimVault **proxy**（EIP-712 签名凭证领奖励，独立于 NPM）。未配置时奖励相关方法直接报错 */
+  rewardClaimVault?: Address
 }
 
 /** 部署环境：`'test'` 测试环境（联调用）/ `'prod'` 生产环境（默认） */
@@ -303,6 +305,13 @@ export interface ICreatePositionParams extends ICommonWriteParams {
    * 仅费用估算等不依赖当前资金状态的场景可关闭；真实交易必须保留校验。
    */
   validateBalance?: boolean
+  /**
+   * WMNT 那一边改用原生 MNT 支付，默认 false。只适用于含 WMNT（`contracts.weth`）的池子。
+   * 主交易变成 `NPM.multicall([mint, refundETH])`，value = WMNT 那一边的投入量，由合约现场 wrap、
+   * 多余部分同笔退回；WMNT 那一边不再需要 approve，余额校验改查原生币。
+   * ⚠️ 原生币还要付 gas，余额校验只覆盖投入量本身，请给 gas 留余量。
+   */
+  useNative?: boolean
   /** 可选：外部已有的池子快照，传了就不再读链（省 1 次 RPC） */
   poolState?: IPoolStateRaw
 }
@@ -312,6 +321,8 @@ export interface IAddLiquidityParams extends ICommonWriteParams {
   base: BaseSide
   baseAmount: bigint
   autoApprove?: boolean
+  /** WMNT 那一边改用原生 MNT 支付，默认 false。语义同 {@link ICreatePositionParams.useNative} */
+  useNative?: boolean
   poolState?: IPoolStateRaw
   positionState?: IPositionStateRaw
 }
@@ -328,6 +339,11 @@ export interface IDecreaseLiquidityParams extends ICommonWriteParams {
    */
   collect?: boolean
   recipient?: Address
+  /**
+   * WMNT 那一边以原生 MNT 到账，默认 false。只适用于含 WMNT 的池子，且要求 `collect` 不为 false。
+   * 主交易会在 collect 之后追加 `unwrapWETH9 + sweepToken`，资产先进 NPM 再在同一笔里转给 recipient。
+   */
+  receiveNative?: boolean
   poolState?: IPoolStateRaw
   positionState?: IPositionStateRaw
 }
@@ -339,6 +355,13 @@ export interface ICollectFeesParams {
   /** 上限，默认 uint128.max（能领多少领多少） */
   amount0Max?: bigint
   amount1Max?: bigint
+  /**
+   * WMNT 那一边以原生 MNT 到账，默认 false。语义同 {@link IDecreaseLiquidityParams.receiveNative}。
+   * 需要知道仓位的两种代币，不传 `positionState` 时会多读 1 次 `positions`。
+   */
+  receiveNative?: boolean
+  /** 可选：仓位快照，仅 `receiveNative` 时用来判断哪一边是 WMNT */
+  positionState?: IPositionStateRaw
   /**
    * 可选：外部已经拿到的「精确可领额」快照，传了就跳过那次 collect staticcall（省 1 次 RPC）。
    *
@@ -353,8 +376,66 @@ export interface ICollectFeesParams {
 export interface IClosePositionParams extends ICommonWriteParams {
   tokenId: bigint
   recipient?: Address
+  /** WMNT 那一边以原生 MNT 到账，默认 false。语义同 {@link IDecreaseLiquidityParams.receiveNative} */
+  receiveNative?: boolean
   positionState?: IPositionStateRaw
   poolState?: IPoolStateRaw
+}
+
+// ---------------------------------------------------------------------------
+// 奖励领取（ByrealRewardClaimVault）：后端签发累计凭证，受益人钱包自己发 claim
+// ---------------------------------------------------------------------------
+
+/**
+ * 奖励账本键 `(positionTokenId, rewardToken, ruleId, ruleType, epochTime)`。
+ * beneficiary 不在键内：NFT 转让不会清零账本。ruleId / ruleType / epochTime 由签发服务定义，不要本地推导。
+ */
+export interface IRewardKey {
+  /** 仅作非零记账键，合约不校验 NFT 存在或归属 */
+  positionTokenId: bigint
+  rewardToken: Address
+  ruleId: bigint
+  ruleType: bigint
+  epochTime: bigint
+}
+
+/** 一张奖励凭证：字段与合约 `ClaimData` / EIP-712 `Claim` 一一对应，签名后任何字段都不能改 */
+export interface IRewardClaim extends IRewardKey {
+  /** 只有它本人能发这笔 claim（合约要求 msg.sender == beneficiary） */
+  beneficiary: Address
+  /** 该账本键在本金库的**累计**应得额（rewardToken 最小单位），不是本次到账额 */
+  syncedAmount: bigint
+  /** 秒级时间戳，合约按区块时间校验 */
+  deadline: bigint
+}
+
+/** 凭证 + 签发服务给的 65 字节签名 */
+export interface ISignedRewardClaim {
+  claim: IRewardClaim
+  signature: Hex
+}
+
+export interface IClaimRewardsParams {
+  /** 发交易的钱包，必须是每张凭证的 beneficiary */
+  userAddress: Address
+  /** 1 张走 `claim`，多张走 `claimBatch`（原子：任一张失败整批回滚）。同一账本键的多张凭证须按 syncedAmount 严格递增排列 */
+  claims: ISignedRewardClaim[]
+}
+
+/** 领奖励时本地按链上账本算出来的中间量 */
+export interface IClaimRewardsMeta {
+  /** 交易目标：金库 proxy 地址 */
+  vault: Address
+  /** 与入参 claims 一一对应 */
+  items: Array<{
+    claim: IRewardClaim
+    /** 执行到这张凭证时账本里的已领累计额（同键多张时含前面几张的结算） */
+    claimedAmount: bigint
+    /** 这张凭证实际到账额 = syncedAmount − claimedAmount */
+    claimableAmount: bigint
+  }>
+  /** 按 rewardToken 汇总的到账额 */
+  totals: Array<{ rewardToken: Address; amount: bigint }>
 }
 
 // ---------------------------------------------------------------------------

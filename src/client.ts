@@ -1,6 +1,6 @@
 /**
  * SDK 门面（`new EvmClmmSdk({ chainId, rpcUrl })`）：结构对齐 Solana 版 `SdkClient`
- * （`sdk.chain.*` / `sdk.clmmClient.*`）。顶层再暴露一层便捷透传，前端不用记方法挂在哪一层。
+ * （`sdk.chain.*` / `sdk.clmmClient.*` / `sdk.rewardClient.*`）。顶层再暴露一层便捷透传，前端不用记方法挂在哪一层。
  *
  * 没有 `api` 成员（池子 / 仓位列表等走 Byreal 后端接口，由调用方自行接入）；也没有通用 ERC20 工具（余额 / 授权由调用方钱包层处理）。
  * 与 Solana 版的对照见 docs/core.md。
@@ -11,9 +11,11 @@ import { ExtraFeeClass } from './raw/index.js'
 import { Chain } from './chain/index.js'
 import { DEFAULT_PROFILE_ID, resolveProfileConfig } from './constants.js'
 import { CLMMClient } from './liquidity/clmm.js'
+import { RewardClient } from './reward/index.js'
 import type {
   IAddLiquidityParams,
   IChainConfig,
+  IClaimRewardsParams,
   IClmmContracts,
   IClosePositionParams,
   ICollectFeesParams,
@@ -25,6 +27,7 @@ import type {
   IPoolStateRaw,
   IQuoteSwapParams,
   IQuoteSwapReturn,
+  IRewardKey,
 } from './types.js'
 
 const createObservedHttpTransport = (
@@ -75,6 +78,9 @@ export class EvmClmmSdk {
 
   /** 流动性动作层：开仓 / 加仓 / 减仓 / 领费 / 关仓，只产出未签名交易 */
   readonly clmmClient: CLMMClient
+
+  /** 奖励领取层：凭后端签发的凭证从 RewardClaimVault 领奖励，只产出未签名交易 */
+  readonly rewardClient: RewardClient
 
   /**
    * 构造时定下的默认额外费率档位（0 = Alpha、1 = Dex）。
@@ -128,6 +134,7 @@ export class EvmClmmSdk {
       extraFeeClass,
     })
     this.clmmClient = new CLMMClient({ chain: this.chain })
+    this.rewardClient = new RewardClient({ chain: this.chain })
   }
 
   // =========================================================================
@@ -178,5 +185,15 @@ export class EvmClmmSdk {
   /** 关仓（decrease 全部 + collect + burn，一笔原子交易）。→ clmmClient.closePosition */
   async closePosition(params: IClosePositionParams) {
     return this.clmmClient.closePosition(params)
+  }
+
+  /** 批量读奖励账本的已领累计额，与 keys 一一对应。→ chain.getRewardClaimedAmountList */
+  async getRewardClaimedAmountList(keys: readonly IRewardKey[]): Promise<bigint[]> {
+    return this.chain.getRewardClaimedAmountList(keys)
+  }
+
+  /** 凭签名凭证领取奖励（1 张 claim / 多张 claimBatch）。→ rewardClient.claimRewards */
+  async claimRewards(params: IClaimRewardsParams) {
+    return this.rewardClient.claimRewards(params)
   }
 }

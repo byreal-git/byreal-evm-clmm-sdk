@@ -117,3 +117,31 @@ describe('getRawPoolInfo：可变费率不进缓存，slot0[5] = protocolFeeRate
   })
 })
 
+
+describe('getMintPrerequisites：原生币余额拼进同一轮 multicall', () => {
+  it('withNativeBalance 时末尾多一个 Multicall3.getEthBalance，否则不读', async () => {
+    const USER: Address = '0x1111111111111111111111111111111111111111'
+    const rounds: Array<ReadonlyArray<{ address: Address; functionName: string; args?: readonly unknown[] }>> = []
+    const results = [
+      [TOKEN_A, TOKEN_B, 60], // 不变字段（冷路径）
+      [...dynamicResults({ tradeFeeRate: 3000, protocolFeeRate: 10 }), 1n, 2n, 3n, 4n, 5n],
+      [...dynamicResults({ tradeFeeRate: 3000, protocolFeeRate: 10 }), 1n, 2n, 3n, 4n],
+    ]
+    const client = {
+      async multicall(params: { contracts: ReadonlyArray<{ address: Address; functionName: string }> }) {
+        rounds.push(params.contracts)
+        return results.shift()
+      },
+    } as unknown as PublicClient
+    const chain = new Chain({ publicClient: client, chainId: 5000, contracts: CONTRACTS, extraFeeClass: ExtraFeeClass.DEX })
+
+    const withNative = await chain.getMintPrerequisites({ poolAddress: POOL, userAddress: USER, spender: CONTRACTS.positionManager, withNativeBalance: true })
+    expect(rounds[1]).toHaveLength(15)
+    expect(rounds[1][14]).toMatchObject({ functionName: 'getEthBalance', args: [USER] })
+    expect(withNative).toMatchObject({ balance0: 1n, balance1: 2n, allowance0: 3n, allowance1: 4n, nativeBalance: 5n })
+
+    const without = await chain.getMintPrerequisites({ poolAddress: POOL, userAddress: USER, spender: CONTRACTS.positionManager })
+    expect(rounds[2]).toHaveLength(14)
+    expect(without).not.toHaveProperty('nativeBalance')
+  })
+})

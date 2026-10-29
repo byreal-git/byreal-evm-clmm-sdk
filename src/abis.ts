@@ -11,6 +11,7 @@ export {
   poolAbi as POOL_ABI,
   nonfungiblePositionManagerAbi as NPM_ABI,
   quoterAbi as QUOTER_ABI,
+  rewardClaimVaultAbi as REWARD_CLAIM_VAULT_ABI,
 } from './raw/abis/index.js'
 
 // ---------- ERC20（含 WETH / WMNT 的 deposit / withdraw；定制合约仓库不含 ERC20，保留本地精简版）----------
