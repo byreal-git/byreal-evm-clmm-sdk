@@ -1,0 +1,16 @@
+package-lock.json
+  h_d31d7ec01c5d56 3,9
+package.json
+  h_d31d7ec01c5d56 3
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2-bit.2+419f699",
+  "base_commit_sha": "5b8730c2bc12451b8da1bfc397772f71e46d7149",
+  "prompts": {},
+  "humans": {
+    "h_d31d7ec01c5d56": {
+      "author": "er.wang <er.wang@lunarax.io>"
+    }
+  }
+}
